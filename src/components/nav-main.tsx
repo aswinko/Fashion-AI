@@ -21,7 +21,7 @@ const newItems = [
     icon: SquareTerminal,
   },
   {
-    title: "Gnereate Image",
+    title: "Genreate Image",
     url: "/image-generation",
     icon: Image,
   },
