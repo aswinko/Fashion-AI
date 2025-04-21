@@ -32,6 +32,7 @@ import {
 } from "@/components/ui/tooltip";
 import { Info } from "lucide-react";
 import useGeneratedStore from "@/store/useGeneratedStore";
+import { Tables } from "@datatypes.types";
 
 export const imageGenerationFormSchema = z.object({
   model: z.string().min(1, {
@@ -75,13 +76,18 @@ export const imageGenerationFormSchema = z.object({
     }),
 });
 
-const Configurations = () => {
+interface ConfigurationsProps {
+  userModels: Tables<"models">[];
+  model_id?: string | undefined;
+}
+
+const Configurations = ({ userModels, model_id }: ConfigurationsProps) => {
   const generateImage = useGeneratedStore((state) => state.generateImage);
 
   const form = useForm<z.infer<typeof imageGenerationFormSchema>>({
     resolver: zodResolver(imageGenerationFormSchema),
     defaultValues: {
-      model: "black-forest-labs/flux-dev",
+      model: model_id ? `aswinko/${model_id}` : "black-forest-labs/flux-dev",
       prompt: "",
       guidance: 3.5,
       num_output: 1,
@@ -116,7 +122,20 @@ const Configurations = () => {
 
     console.log(values);
 
-    await generateImage(values);
+    const newValues = {
+      ...values,
+      prompt: values.model.startsWith("aswinko/")
+        ? (() => {
+            const modelId = values.model.replace("aswinko/", "").split(":")[0];
+            const selectedModel = userModels.find(
+              (model) => model.model_id === modelId
+            );
+            return `photo of a ${selectedModel?.trigger_word || "ohwx"} ${selectedModel?.gender}, ${values.prompt} `;
+          })()
+        : values.prompt,
+    };
+
+    await generateImage(newValues);
   }
   return (
     <TooltipProvider>
@@ -157,6 +176,17 @@ const Configurations = () => {
                       <SelectItem value="black-forest-labs/flux-schnell">
                         Flux Schnell
                       </SelectItem>
+                      {userModels?.map(
+                        (model) =>
+                          model.training_status === "succeeded" && (
+                            <SelectItem
+                              key={model.id}
+                              value={`aswinko/${model.model_id}:${model.version}`}
+                            >
+                              {model.model_name}
+                            </SelectItem>
+                          )
+                      )}
                       {/* <SelectItem value="">My model</SelectItem> */}
                     </SelectContent>
                   </Select>

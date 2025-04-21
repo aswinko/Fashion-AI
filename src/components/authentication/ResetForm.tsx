@@ -19,8 +19,10 @@ const formSchema = z.object({
   }),
 });
 
-import React from "react";
+import React, { useId } from "react";
 import { cn } from "@/lib/utils";
+import { resetPassword } from "@/app/actions/auth-actions";
+import { toast } from "sonner";
 
 const ResetForm = ({ className }: { className?: string }) => {
   const form = useForm<z.infer<typeof formSchema>>({
@@ -29,11 +31,30 @@ const ResetForm = ({ className }: { className?: string }) => {
       email: "",
     },
   });
+    const toastId = useId();
+  
 
-  function onSubmit(values: z.infer<typeof formSchema>) {
-    // Do something with the form values.
-    // ✅ This will be type-safe and validated.
-    console.log(values);
+  async function onSubmit(values: z.infer<typeof formSchema>) {
+    toast.loading("Sending password reset email...", { id: toastId });
+
+    try {
+      const { success, error } = await resetPassword({
+        email: values.email || "",
+      });
+      if (!success) {
+        toast.error(error, { id: toastId });
+      } else {
+        toast.success(
+          "Password reset email sent! Please check your email for instructions.",
+          { id: toastId }
+        );
+      }
+    } catch (error: any) {
+      toast.error(error?.message || "Error sending the password reset email!", {
+        id: toastId,
+      });
+      console.error(error);
+    }
   }
 
   return (
@@ -53,7 +74,9 @@ const ResetForm = ({ className }: { className?: string }) => {
               </FormItem>
             )}
           />
-          <Button type="submit" className="w-full ">Reset</Button>
+          <Button type="submit" className="w-full ">
+            Reset
+          </Button>
         </form>
       </Form>
     </div>

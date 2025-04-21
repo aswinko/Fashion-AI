@@ -2,11 +2,12 @@
 
 import { Database } from "@datatypes.types";
 import { imageGenerationFormSchema } from "@/components/image-generation/Configurations";
-import {  z } from "zod";
+import { z } from "zod";
 import Replicate from "replicate";
 import { createClient } from "@/lib/supabase/server";
 import { imageMeta } from "image-meta";
 import { randomUUID } from "crypto";
+import { getCredits } from "./credit-actions";
 
 const replicate = new Replicate({
   auth: process.env.REPLICATE_API_TOKEN,
@@ -22,18 +23,49 @@ interface ImageResponse {
 export async function generateImageAction(
   input: z.infer<typeof imageGenerationFormSchema>
 ): Promise<ImageResponse> {
-  const modelInput = {
-    prompt: input.prompt,
-    go_fast: true,
-    guidance: input.guidance,
-    megapixels: "1",
-    num_outputs: input.num_output,
-    aspect_ratio: input.aspect_ratio,
-    output_format: input.output_format,
-    output_quality: input.output_quality,
-    prompt_strength: 0.8,
-    num_inference_steps: input.num_inference_steps,
-  };
+  if (!process.env.REPLICATE_API_TOKEN) {
+    return {
+      error: "The replicate API token is not set!",
+      data: null,
+      success: false,
+    };
+  }
+
+  const {data: credits} = await getCredits();
+  if (!credits?.image_generation_count || credits.image_generation_count <= 0) {
+    return  {
+      error: "No credits available",
+      success: false,
+      data: null,
+    }
+  }
+
+  const modelInput = input.model.startsWith("aswinko/")
+    ? {
+        model: "dev",
+        prompt: input.prompt,
+        lora_scale: 1,
+        guidance: input.guidance,
+        num_outputs: input.num_output,
+        aspect_ratio: input.aspect_ratio,
+        output_format: input.output_format,
+        output_quality: input.output_quality,
+        prompt_strength: 0.8,
+        num_inference_steps: input.num_inference_steps,
+        extra_lora_scale: 0
+      }
+    : {
+        prompt: input.prompt,
+        go_fast: true,
+        guidance: input.guidance,
+        megapixels: "1",
+        num_outputs: input.num_output,
+        aspect_ratio: input.aspect_ratio,
+        output_format: input.output_format,
+        output_quality: input.output_quality,
+        prompt_strength: 0.8,
+        num_inference_steps: input.num_inference_steps,
+      };
 
   try {
     const output = await replicate.run(input.model as "${string}/${string}", {
@@ -186,10 +218,10 @@ export async function getImages(limit?: number) {
           .from("generated-images")
           .createSignedUrl(`${user.id}/${image.image_name}`, 3600);
 
-          return {
-            ...image,
-            url: data?.signedUrl,
-          }
+        return {
+          ...image,
+          url: data?.signedUrl,
+        };
       }
     )
   );
@@ -200,7 +232,6 @@ export async function getImages(limit?: number) {
     data: imageWithUrls || null,
   };
 }
-
 
 export async function deleteImage(id: string, imageName: string) {
   const supabase = await createClient();
@@ -229,7 +260,9 @@ export async function deleteImage(id: string, imageName: string) {
     };
   }
 
-  await supabase.storage.from('generated-images').remove([`${user.id}/${imageName}`]);
+  await supabase.storage
+    .from("generated-images")
+    .remove([`${user.id}/${imageName}`]);
 
   return {
     error: null,

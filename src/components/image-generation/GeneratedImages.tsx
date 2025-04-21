@@ -12,25 +12,6 @@ import {
 import Image from "next/image";
 import useGeneratedStore from "@/store/useGeneratedStore";
 
-// const images = [
-//   {
-//     src: "/hero-images/Charismatic Young Man with a Warm Smile and Stylish Tousled Hair.jpeg",
-//     alt: "Charismatic",
-//   },
-//   {
-//     src: "/hero-images/Confident Businesswoman on Turquoise Backdrop.jpeg",
-//     alt: "Charismatic",
-//   },
-//   {
-//     src: "/hero-images/Confident Woman in Red Outfit.jpeg",
-//     alt: "Charismatic",
-//   },
-//   {
-//     src: "/hero-images/Confident Woman in Urban Setting.jpeg",
-//     alt: "Charismatic",
-//   },
-// ];
-
 const GeneratedImages = () => {
   const images = useGeneratedStore((state) => state.images)
   const loading = useGeneratedStore((state) => state.loading)

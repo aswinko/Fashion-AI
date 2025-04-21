@@ -26,15 +26,19 @@ const ImageDialog = ({ image, onClose }: ImageDialogProps) => {
         const url = window.URL.createObjectURL(new Blob([blob]));
         const link = document.createElement("a");
         link.href = url;
-        link.setAttribute("download", `generated_image-${Date.now()}.${image?.output_format}` || "");
+        link.setAttribute(
+          "download",
+          `generated_image-${Date.now()}.${image?.output_format}` || ""
+        );
         document.body.appendChild(link);
         link.click();
 
         //cleanup
-        link.parentNode?.removeChild(link)
-      }).catch((error) => {
-        console.error("Error downloading image", error)
+        link.parentNode?.removeChild(link);
       })
+      .catch((error) => {
+        console.error("Error downloading image", error);
+      });
   };
   return (
     <Sheet open={true} onOpenChange={onClose}>
@@ -54,7 +58,12 @@ const ImageDialog = ({ image, onClose }: ImageDialogProps) => {
                 <Button className="w-fit" onClick={handleDownload}>
                   <Download className="w-4 h-4 mr-2" /> Download
                 </Button>
-                <DeleteImage imageId={image.id.toString()} onDelete={onClose} className="w-fit" imageName={image.image_name || ''} />
+                <DeleteImage
+                  imageId={image.id.toString()}
+                  onDelete={onClose}
+                  className="w-fit"
+                  imageName={image.image_name || ""}
+                />
               </div>
             </div>
             <hr className="inline-block w-full border-primary/30 mb-2" />
@@ -68,12 +77,14 @@ const ImageDialog = ({ image, onClose }: ImageDialogProps) => {
             <div className="flex flex-wrap gap-3 mb-32">
               <Badge
                 variant={"secondary"}
-                className="mb-2 rounded-full border border-primary/30 px-4 py-2 font-normal"
+                className="mb-2 rounded-full border border-primary/30 px-4 py-2 font-normal max-w-[80%]"
               >
                 <span className="text-primary uppercase mr-2 font-semibold">
-                  Model ID:{" "}
+                  Model ID:
                 </span>
-                {image.model}{" "}
+                {image.model?.startsWith("aswinko/")
+                  ? image.model.split("/")[1].split(":")[0]
+                  : image.model}
               </Badge>
               <Badge
                 variant={"secondary"}

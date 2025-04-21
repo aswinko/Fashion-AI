@@ -16,7 +16,6 @@ interface GalleryProps {
 const GalleryComponent = ({ images }: GalleryProps) => {
 
   const [selectedImage, setSelectedImage] = useState<ImageProps | null>(null)
-  console.log(images);
 
   if (images.length === 0) {
     return (
